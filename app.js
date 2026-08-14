@@ -218,8 +218,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 awayTeam.mp++;
                 homeTeam.gf += match.homeScore;
                 homeTeam.ga += match.awayScore;
-                awayTeam.gf += match.awayScore;
-                awayTeam.ga += match.homeScore;
+                homeTeam.gf += match.awayScore;
+                homeTeam.ga += match.homeScore;
 
                 if (match.homeScore > match.awayScore) {
                     homeTeam.w++;
@@ -347,7 +347,6 @@ document.addEventListener('DOMContentLoaded', () => {
         playoffsContainer.classList.remove('hidden');
         renderPlayoffBracket();
         
-        // Desplazarse suavemente hacia la sección de playoffs
         playoffsContainer.scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -386,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        currentPlayoffRoundIndex++;
+    currentPlayoffRoundIndex++;
         renderPlayoffBracket();
 
         if (currentPlayoffRoundIndex >= playoffRounds.length) {

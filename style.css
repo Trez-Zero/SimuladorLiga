@@ -53,14 +53,14 @@ body {
     overflow-x: hidden;
 }
 
-/* --- MARCA DE AGUA DE FONDO --- */
+/* --- MARCA DE AGUA DE FONDO (NUEVA IMAGEN) --- */
 .watermark-bg {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-image: url('Lean-removebg-preview.png');
+    background-image: url('Lean-removebg-preview_2.png');
     background-repeat: no-repeat;
     background-position: center center;
     background-size: 550px auto;
