@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Liga Dawgs</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1 id="main-title">🏆 Torneo Dawgs 🏆</h1>
+
+        <!-- PANTALLA 1: CONFIGURACIÓN -->
+        <div id="setup-screen" class="screen">
+            <h2>Configuración del Torneo</h2>
+            <label>¿Cómo se llama la liga?:</label>
+            <input type="text" id="league-name" placeholder="Ej. LaLiga, Copa Dawgs..."><br><br>
+
+            <label>¿Cuántos equipos van a jugar? (4 - 20):</label>
+            <input type="number" id="team-count" min="4" max="20" value="8">
+            <button onclick="generateTeamInputs()">Generar Equipos</button>
+            
+            <div id="team-inputs" style="margin-top: 20px;"></div>
+        </div>
+
+        <!-- PANTALLA 2: TEMPORADA REGULAR -->
+        <div id="league-screen" class="screen hidden">
+            <h2>Temporada Regular</h2>
+            <div class="controls">
+                <button onclick="simulateNextRound()">Simular Siguiente Jornada</button>
+                <button onclick="simulateFullSeason()">Simular Temporada Completa</button>
+            </div>
+            <h3 id="round-display">Jornada: 0 / 0</h3>
+            
+            <table id="standings-table">
+                <thead>
+                    <tr>
+                        <th>Pos</th><th>Equipo</th><th>Pts</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DIF</th>
+                    </tr>
+                </thead>
+                <tbody id="standings-body"></tbody>
+            </table>
+
+            <div id="recent-results">
+                <h3>Resultados de la Jornada</h3>
+                <ul id="results-list"></ul>
+            </div>
+        </div>
+
+        <!-- PANTALLA 3: PLAYOFFS ( PESTAÑA APARTE ) -->
+        <div id="playoffs-screen" class="screen hidden">
+            <h2>🔥 Fase Final - Cuadro de Playoffs 🔥</h2>
+            <div class="controls">
+                <button id="btn-playoffs" onclick="simulatePlayoffRound()">Simular Siguiente Ronda de Playoffs</button>
+            </div>
+            
+            <!-- Contenedor visual del Bracket en formato de árbol -->
+            <div id="bracket-container" class="bracket-view">
+                <!-- Se llenará dinámicamente con las rondas -->
+            </div>
+
+            <div id="playoff-logs" style="margin-top: 20px;">
+                <h3>Historial de la Fase Final</h3>
+                <div id="bracket-results"></div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
