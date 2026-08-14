@@ -6,12 +6,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const configSection = document.getElementById('config-section');
     const tournamentSection = document.getElementById('tournament-section');
     const simulateMatchdayBtn = document.getElementById('simulate-matchday-btn');
+    const simulateAllBtn = document.getElementById('simulate-all-btn');
     const currentPhaseTitle = document.getElementById('current-phase-title');
     const matchdayTitle = document.getElementById('matchday-title');
     const matchesContainer = document.getElementById('matches-container');
     const standingsTableBody = document.querySelector('#standings-table tbody');
     const playoffsContainer = document.getElementById('playoffs-container');
+    const playoffsSectionTitle = document.getElementById('playoffs-section-title');
     const bracketGrid = document.getElementById('bracket-grid');
+    const historySidebarContainer = document.getElementById('history-sidebar-container');
     
     // Modal elements
     const customAlert = document.getElementById('custom-alert');
@@ -25,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let playoffRounds = [];
     let currentPlayoffRoundIndex = 0;
 
-    // Almacenamiento temporal para conservar los nombres al reiniciar
     let savedTeamNames = [];
 
     function showAlert(message) {
@@ -58,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
         generateTeamInputs();
     });
 
-    // Inicializar inputs por defecto
     generateTeamInputs();
 
     startBtn.addEventListener('click', () => {
@@ -78,14 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             teams.push({
                 id: index,
                 name: name,
-                mp: 0, // Matches played
-                w: 0,  // Won
-                d: 0,  // Drawn
-                l: 0,  // Lost
-                gf: 0, // Goals for
-                ga: 0, // Goals against
-                gd: 0, // Goal difference
-                pts: 0 // Points
+                mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts: 0
             });
         });
 
@@ -94,7 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Generar calendario de ida y vuelta (Round-Robin)
         schedule = generateRoundRobinSchedule(teams);
         currentMatchday = 0;
         tournamentStage = 'regular';
@@ -103,18 +96,18 @@ document.addEventListener('DOMContentLoaded', () => {
         tournamentSection.classList.remove('hidden');
         playoffsContainer.classList.add('hidden');
         simulateMatchdayBtn.classList.remove('hidden');
+        simulateAllBtn.classList.remove('hidden');
 
         updateStandings();
         renderMatchday();
+        updateSidebarHistory();
     });
 
-    // Evento del botón de Reiniciar torneo conservando nombres
     resetTournamentBtn.addEventListener('click', () => {
         tournamentSection.classList.add('hidden');
         configSection.classList.remove('hidden');
         playoffsContainer.classList.add('hidden');
         
-        // Restaurar la cantidad de equipos y los nombres guardados
         numTeamsInput.value = savedTeamNames.length || 8;
         generateTeamInputs(savedTeamNames);
     });
@@ -122,15 +115,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function generateRoundRobinSchedule(teamsList) {
         let list = [...teamsList];
         if (list.length % 2 !== 0) {
-            list.push({ id: -1, name: 'BYE' }); // Equipo fantasma si es impar
+            list.push({ id: -1, name: 'BYE' });
         }
 
         const totalTeams = list.length;
         const totalRounds = totalTeams - 1;
         const half = totalTeams / 2;
-        let rounds = [];
-
         let matchdaysFirstLeg = [];
+
         for (let r = 0; r < totalRounds; r++) {
             let matches = [];
             for (let i = 0; i < half; i++) {
@@ -142,14 +134,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             matchdaysFirstLeg.push(matches);
-            // Rotar equipos manteniendo el primero fijo
             list.splice(1, 0, list.pop());
         }
 
-        // Ida
-        let allMatchdays = [...matchdaysFirstLeg];
-
-        // Vuelta (invertir local y visitante)
         let matchdaysSecondLeg = matchdaysFirstLeg.map(matchday => {
             return matchday.map(match => ({
                 home: match.away,
@@ -160,11 +147,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }));
         });
 
-        return allMatchdays.concat(matchdaysSecondLeg);
+        return matchdaysFirstLeg.concat(matchdaysSecondLeg);
     }
 
     function updateStandings() {
-        // Ordenar equipos por Puntos, Diferencia de Goles, Goles Favor
         const sortedTeams = [...teams].sort((a, b) => {
             if (b.pts !== a.pts) return b.pts - a.pts;
             if (b.gd !== a.gd) return b.gd - a.gd;
@@ -218,55 +204,78 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function processMatchdaySimulation(matchdayIndex) {
+        schedule[matchdayIndex].forEach(match => {
+            if (!match.played) {
+                match.homeScore = Math.floor(Math.random() * 4);
+                match.awayScore = Math.floor(Math.random() * 4);
+                match.played = true;
+
+                const homeTeam = teams.find(t => t.id === match.home);
+                const awayTeam = teams.find(t => t.id === match.away);
+
+                homeTeam.mp++;
+                awayTeam.mp++;
+                homeTeam.gf += match.homeScore;
+                homeTeam.ga += match.awayScore;
+                awayTeam.gf += match.awayScore;
+                awayTeam.ga += match.homeScore;
+
+                if (match.homeScore > match.awayScore) {
+                    homeTeam.w++;
+                    homeTeam.pts += 3;
+                    awayTeam.l++;
+                } else if (match.homeScore < match.awayScore) {
+                    awayTeam.w++;
+                    awayTeam.pts += 3;
+                    homeTeam.l++;
+                } else {
+                    homeTeam.d++;
+                    homeTeam.pts += 1;
+                    awayTeam.d++;
+                    awayTeam.pts += 1;
+                }
+
+                homeTeam.gd = homeTeam.gf - homeTeam.ga;
+                awayTeam.gd = awayTeam.gf - awayTeam.ga;
+            }
+        });
+    }
+
+    function updateSidebarHistory() {
+        historySidebarContainer.innerHTML = '';
+        for (let i = 0; i < currentMatchday; i++) {
+            const block = document.createElement('div');
+            block.className = 'history-matchday-block';
+            
+            let html = `<h4>Jornada ${i + 1}</h4>`;
+            schedule[i].forEach(match => {
+                const homeTeam = teams.find(t => t.id === match.home);
+                const awayTeam = teams.find(t => t.id === match.away);
+                html += `
+                    <div class="history-match-item">
+                        <span>${homeTeam.name} vs ${awayTeam.name}</span>
+                        <strong>${match.homeScore}-${match.awayScore}</strong>
+                    </div>
+                `;
+            });
+            block.innerHTML = html;
+            historySidebarContainer.appendChild(block);
+        }
+    }
+
     simulateMatchdayBtn.addEventListener('click', () => {
         if (tournamentStage === 'regular') {
             if (currentMatchday < schedule.length) {
-                // Simular partidos de la jornada actual
-                schedule[currentMatchday].forEach(match => {
-                    if (!match.played) {
-                        // Simulación de goles basada en distribución aleatoria simple
-                        match.homeScore = Math.floor(Math.random() * 4);
-                        match.awayScore = Math.floor(Math.random() * 4);
-                        match.played = true;
-
-                        const homeTeam = teams.find(t => t.id === match.home);
-                        const awayTeam = teams.find(t => t.id === match.away);
-
-                        homeTeam.mp++;
-                        awayTeam.mp++;
-                        homeTeam.gf += match.homeScore;
-                        homeTeam.ga += match.awayScore;
-                        awayTeam.ga += match.homeScore; // wait, correction: away ga gets homeScore
-                        // Corrigiendo correctamente goles en contra:
-                        awayTeam.gf += match.awayScore;
-                        awayTeam.ga += match.homeScore;
-
-                        if (match.homeScore > match.awayScore) {
-                            homeTeam.w++;
-                            homeTeam.pts += 3;
-                            awayTeam.l++;
-                        } else if (match.homeScore < match.awayScore) {
-                            awayTeam.w++;
-                            awayTeam.pts += 3;
-                            homeTeam.l++;
-                        } else {
-                            homeTeam.d++;
-                            homeTeam.pts += 1;
-                            awayTeam.d++;
-                            awayTeam.pts += 1;
-                        }
-
-                        homeTeam.gd = homeTeam.gf - homeTeam.ga;
-                        awayTeam.gd = awayTeam.gf - awayTeam.ga;
-                    }
-                });
+                processMatchdaySimulation(currentMatchday);
+                currentMatchday++;
 
                 updateStandings();
                 renderMatchday();
-                currentMatchday++;
+                updateSidebarHistory();
 
                 if (currentMatchday >= schedule.length) {
-                    // Fin de la fase regular, preparar playoffs (Top 8 o Top 4)
+                    simulateAllBtn.classList.add('hidden');
                     preparePlayoffs();
                 }
             }
@@ -275,14 +284,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    simulateAllBtn.addEventListener('click', () => {
+        if (tournamentStage === 'regular') {
+            while (currentMatchday < schedule.length) {
+                processMatchdaySimulation(currentMatchday);
+                currentMatchday++;
+            }
+            updateStandings();
+            renderMatchday();
+            updateSidebarHistory();
+            simulateAllBtn.classList.add('hidden');
+            preparePlayoffs();
+        }
+    });
+
     function preparePlayoffs() {
         tournamentStage = 'playoffs';
         currentPhaseTitle.textContent = "Fase Final (Playoffs)";
-        matchdayTitle.textContent = "Camino al Campeonato";
-        matchesContainer.innerHTML = '<p style="color: var(--accent);">¡La fase regular ha finalizado! Da clic en "Simular Playoffs" para avanzar.</p>';
+        matchdayTitle.textContent = "¡Fase regular finalizada!";
+        matchesContainer.innerHTML = '<p style="color: var(--accent);">La fase regular ha concluido. Consulta el cuadro de Playoffs abajo para continuar.</p>';
         simulateMatchdayBtn.textContent = "Simular Ronda de Playoffs";
 
-        // Ordenar equipos y tomar los mejores 8 (o 4 si hay menos de 8 equipos)
         const sortedTeams = [...teams].sort((a, b) => {
             if (b.pts !== a.pts) return b.pts - a.pts;
             if (b.gd !== a.gd) return b.gd - a.gd;
@@ -294,7 +316,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         playoffRounds = [];
 
-        // Cuartos de final o Semifinales según la cantidad clasificada
         if (playoffTeamCount === 8) {
             playoffRounds.push({
                 name: "Cuartos de Final",
@@ -307,16 +328,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Semifinales
         playoffRounds.push({
-            name: playoffTeamCount === 8 ? "Semifinales" : "Semifinales",
+            name: "Semifinales",
             matches: playoffTeamCount === 8 ? [] : [
                 { teamA: qualifiedTeams[0], teamB: qualifiedTeams[3], scoreA: null, scoreB: null, winner: null },
                 { teamA: qualifiedTeams[1], teamB: qualifiedTeams[2], scoreA: null, scoreB: null, winner: null }
             ]
         });
 
-        // Gran Final
         playoffRounds.push({
             name: "Gran Final",
             matches: [
@@ -327,6 +346,9 @@ document.addEventListener('DOMContentLoaded', () => {
         currentPlayoffRoundIndex = 0;
         playoffsContainer.classList.remove('hidden');
         renderPlayoffBracket();
+        
+        // Desplazarse suavemente hacia la sección de playoffs
+        playoffsContainer.scrollIntoView({ behavior: 'smooth' });
     }
 
     function simulatePlayoffRound() {
@@ -340,7 +362,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 match.scoreA = Math.floor(Math.random() * 4);
                 match.scoreB = Math.floor(Math.random() * 4);
 
-                // Evitar empates en playoffs (añadir prórroga/penales si es necesario)
                 if (match.scoreA === match.scoreB) {
                     match.scoreA += Math.random() > 0.5 ? 1 : 0;
                 }
@@ -352,17 +373,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Pasar ganadores a la siguiente ronda
         if (currentPlayoffRoundIndex + 1 < playoffRounds.length) {
             const nextRound = playoffRounds[currentPlayoffRoundIndex + 1];
             if (currentPlayoffRoundIndex === 0 && playoffRounds.length === 3) {
-                // De Cuartos a Semis
                 nextRound.matches = [
                     { teamA: playoffRounds[0].matches[0].winner, teamB: playoffRounds[0].matches[1].winner, scoreA: null, scoreB: null, winner: null },
                     { teamA: playoffRounds[0].matches[2].winner, teamB: playoffRounds[0].matches[3].winner, scoreA: null, scoreB: null, winner: null }
                 ];
             } else if (nextRound.matches.length === 1 && roundWinners.length >= 2) {
-                // De Semis a Final
                 nextRound.matches[0].teamA = roundWinners[0];
                 nextRound.matches[0].teamB = roundWinners[1];
             }
@@ -373,7 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (currentPlayoffRoundIndex >= playoffRounds.length) {
             const champion = playoffRounds[playoffRounds.length - 1].matches[0].winner;
-            matchdayTitle.textContent = `🏆 ¡El Campeón del Torneo es ${champion.name}! 🏆`;
+            playoffsSectionTitle.textContent = `🏆 ¡El Campeón del Torneo es ${champion.name}! 🏆`;
             simulateMatchdayBtn.classList.add('hidden');
         }
     }
@@ -381,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderPlayoffBracket() {
         bracketGrid.innerHTML = '';
 
-        playoffRounds.forEach((round, rIndex) => {
+        playoffRounds.forEach((round) => {
             const roundDiv = document.createElement('div');
             roundDiv.className = 'bracket-round';
             
