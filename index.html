@@ -7,6 +7,12 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Marca de agua de fondo -->
+    <div class="watermark-bg"></div>
+
+    <!-- Nombre en la esquina superior derecha -->
+    <div class="user-signature">Trez</div>
+
     <div class="app-container">
         <!-- Sección de Configuración Inicial -->
         <section id="config-section" class="card">
@@ -26,7 +32,10 @@
         <section id="tournament-section" class="card hidden">
             <div class="tournament-header">
                 <h2 id="current-phase-title">Fase Regular</h2>
-                <button id="simulate-matchday-btn" class="primary-btn">Simular Jornada</button>
+                <div class="tournament-actions">
+                    <button id="simulate-matchday-btn" class="primary-btn">Simular Jornada</button>
+                    <button id="reset-tournament-btn" class="secondary-btn">Reiniciar Torneo</button>
+                </div>
             </div>
 
             <!-- Tabla de Posiciones (Fase Regular) -->
